@@ -3,6 +3,8 @@
 #include <errno.h>
 #include <errno.h>
 #include <limits.h>
+#include <time.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <sys/types.h>
 
@@ -22,13 +24,19 @@ static long posix_version = 0;
 
 void ax_log(char *str) 
 {
+	time_t t;
+	char t_str[30];
+	time(&t);
+	strftime(t_str, 30, "[%d.%m.%Y %X] ", localtime(&t));
+
+	fprintf(stderr, t_str);
 	fprintf(stderr, str);
 }
 
-char *path_alloc(int *sizep) 
+char *ax_path_alloc(int *sizep) 
 {
 	char *path;
-	size_t size;
+	int size;
 
 	if(posix_version == 0) 
 		posix_version = sysconf(_SC_VERSION);

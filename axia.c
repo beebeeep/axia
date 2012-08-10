@@ -13,6 +13,10 @@ const char *DB_NAME = "./index.db";
 
 int main(int argc, char *argv[])
 {
-	ax_build_index("../", DB_NAME);
+	if(argc > 1) { 
+		ax_build_index(argv[1], DB_NAME);
+	} else {
+		ax_build_index("..", DB_NAME);
+	}
 	//return fuse_main(argc, argv, &hello_oper, NULL);
 }
