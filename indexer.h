@@ -11,9 +11,18 @@ directory indexing all files, its attributes and content type
 #ifndef INDEXER_H
 #define INDEXER_H
 
+
+/**
+ * structure representing directory entry
+*/
+typedef struct {
+	char		*cname;		/**< canonicalized file name */
+	struct stat	st;		/**< stat structure */
+} ax_dir_entry;
+
 /** 
- * sturcture representing file record in file index
- */
+ * stucture representing file record in file index
+*/
 typedef struct {
 	char 	*cname;		/**< canonicalized file name */
 	char 	*size;		/**< size of file */

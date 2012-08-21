@@ -70,3 +70,22 @@ char *ax_path_alloc(int *sizep)
 
 	return path;
 }
+
+ax_list *ax_list_init()
+{
+	ax_list *list =  (ax_list *)malloc(sizeof(ax_list));
+	if(list != NULL) {
+		list->head = NULL;
+		list->tail = NULL;
+	}
+	return list;
+}
+
+ax_list_entry * ax_list_append(ax_list *list, void *entry, size_t size)
+{
+	ax_list_entry *e = (ax_list_entry *)malloc(sizeof(ax_list_entry));
+	if(e == NULL) return 
+	e->entry = malloc(size);
+	memcpy(e->entry, entry, size);
+
+}

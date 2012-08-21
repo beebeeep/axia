@@ -9,7 +9,7 @@
 #include <db.h>
 
 #include "misc.h"
-
+#include "indexer.h"
 
 
 DB* ax_prepare_db(char *db_name) {
@@ -44,7 +44,7 @@ int ax_build_index(char *path, char *db_name)
 	ax_log("Starting indexing files...\n");
 
 	DIR *dir; 
-	struct dirent *entry;
+	struct dirent *file;
 	struct stat statbuf;
 	int ret;
 
@@ -69,11 +69,14 @@ int ax_build_index(char *path, char *db_name)
 	*ptr = '\0';
 
 
+	ax_list *files = ax_list_init();
+	
+
 	printf("searching in %s\n", fullpath);	
-	while( (entry = readdir(dir)) != NULL) {
-		if(entry->d_name[0] == '.') continue;		//skip hidden files and current and parent dir
+	while( (file = readdir(dir)) != NULL) {
+		if(file->d_name[0] == '.') continue;		//skip hidden files and current and parent dir
 		
-		printf("%s\n", entry->d_name);
+		printf("%s\n", file->d_name);
 	}
 	return 0;
 }
