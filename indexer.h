@@ -11,14 +11,15 @@ directory indexing all files, its attributes and content type
 #ifndef INDEXER_H
 #define INDEXER_H
 
+#include "misc.h"
 
 /**
- * structure representing directory entry
+ * structure representing file entry
 */
 typedef struct {
 	char		*cname;		/**< canonicalized file name */
 	struct stat	st;		/**< stat structure */
-} ax_dir_entry;
+} ax_file_entry;
 
 /** 
  * stucture representing file record in file index
@@ -33,5 +34,15 @@ typedef struct {
 } ax_file_record;
 
 int ax_build_index(char *, char *);
+
+/**
+ * this function scans directory stored in list entry and
+ * appends its contents into files list
+ * 
+ * @param files list with file entries
+ * @param dir dir entry to be scanned
+ * @return n/a
+ */
+void ax_append_dir_content(ax_list *files, ax_list_entry *dir);
 
 #endif

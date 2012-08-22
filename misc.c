@@ -7,6 +7,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <string.h>
 
 #include "misc.h"
 
@@ -71,21 +72,49 @@ char *ax_path_alloc(int *sizep)
 	return path;
 }
 
-ax_list *ax_list_init()
+ax_list *ax_list_init(void *entry, size_t size)
 {
 	ax_list *list =  (ax_list *)malloc(sizeof(ax_list));
-	if(list != NULL) {
-		list->head = NULL;
-		list->tail = NULL;
+	if(list == NULL) return NULL; 
+
+	/* allocate memory for list entry and copy data into it */
+	ax_list_entry *e = (ax_list_entry *)malloc(sizeof(ax_list_entry));
+	if(e == NULL) {
+		free(list);
+		return NULL;
 	}
+	e->data = malloc(size);
+	if(e->data == NULL) {
+		free(list); free(e);
+		return NULL;
+	}
+	memcpy(e->data, entry, size);
+
+	e->next = NULL;
+	list->head = e;
+	list->tail = e;
+
 	return list;
 }
 
 ax_list_entry * ax_list_append(ax_list *list, void *entry, size_t size)
 {
+	/* allocate memory for list entry and list data */
 	ax_list_entry *e = (ax_list_entry *)malloc(sizeof(ax_list_entry));
-	if(e == NULL) return 
-	e->entry = malloc(size);
-	memcpy(e->entry, entry, size);
+	if(e == NULL) return NULL; 
+	e->data = malloc(size);
+	if(e->data == NULL) {
+		free(e); 
+		return NULL;
+	}
+	
+	/* copy data to list entry */
+	memcpy(e->data, entry, size);
+	e->next = NULL; 
 
+	/* set pointer to created entry and shift list tail */
+	list->tail->next = e; 
+	list->tail = e; 
+
+	return e;
 }
