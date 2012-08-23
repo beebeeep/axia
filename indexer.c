@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <dirent.h>
 #include <string.h>
 #include <sys/types.h>
+#include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -103,13 +103,47 @@ int ax_build_index(char *path, char *db_name)
 void ax_append_dir_content(ax_list *files, ax_list_entry *dir) 
 {
 	ax_file_entry *e = (ax_file_entry *)dir->data;
+	ax_file_entry new_entry;
 	DIR *directory;
-	struct dirent *file;
+	struct dirent *entry;
+	struct stat statbuf;
+	char *filename, *ptr;
+	int len;
+	size_t path_len = strlen(e->cname);
+
 	if(!S_ISDIR(e->st.st_mode)) return;
 
 	directory = opendir(e->cname);
+	if(directory == NULL) {
+		fprintf(stderr, "Cannot open dir %s: ", e->cname);
+		perror("");
+		return;
+	}
 
-	while(file = readdir(directory) != NULL) {
-		//scan dir
+	printf("scanning dir %s\n", e->cname);
+	while((entry = readdir(directory)) != NULL) {
+		if(entry->d_name[0] == '.') continue;
+
+		filename = ax_path_alloc(&len);
+		sprintf(filename, "%s%s", e->cname, entry->d_name);
+		printf("\tfound file '%s'\n", filename);
+
+		if(stat(filename, &statbuf)) {
+			fprintf(stderr, "Cannot stat %s: ", filename);
+			perror("");
+			continue;
+		}
+
+		ptr = filename + strlen(filename);
+	       	*ptr++	= '/'; 
+		*ptr = '\0';
+		
+		new_entry.st = statbuf;
+		new_entry.cname = filename;	
+		ax_list_append(files, &new_entry, sizeof(new_entry));
+	}
+	if(closedir(directory)) {
+		fprintf(stderr, "Cannot close %s: ", e->cname);
+		perror("");
 	}
 }
