@@ -5,6 +5,9 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+
 
 #include <db.h>
 
@@ -48,7 +51,7 @@ int ax_build_index(char *path, char *db_name)
 	struct stat statbuf;
 	int ret;
 
-	char *fullpath, *ptr, *filename;
+	char *fullpath, *ptr;
 	int len; 
 
 	ax_list *files;
@@ -57,7 +60,6 @@ int ax_build_index(char *path, char *db_name)
 	ax_file_entry d_entry;
 
 	fullpath = ax_path_alloc(&len);
-	filename = ax_path_alloc(&len);
 
 	realpath(path, fullpath);
 	
@@ -78,8 +80,9 @@ int ax_build_index(char *path, char *db_name)
 	d_entry.cname = fullpath;
 	d_entry.st = statbuf; 
 
-	files = ax_list_init(&d_entry, sizeof(d_entry));
+	files = ax_list_init(&d_entry, ax_file_entry_allocator, ax_file_entry_free);
 	current_file = files->head; 
+	
 
 	while(current_file != NULL) {
 		ax_file_entry *e = (ax_file_entry *)current_file->data;
@@ -96,6 +99,10 @@ int ax_build_index(char *path, char *db_name)
 		/* scan for next file in list */
 		current_file = current_file->next;
 	}
+	struct rusage usage;
+	getrusage(RUSAGE_SELF, &usage);
+	fprintf(stderr, "Resource usage:\n\treads=%ld\n\twrites=%ld\n\tmaxrss=%ld\n", usage.ru_inblock, usage.ru_oublock, usage.ru_maxrss);
+
 
 	return 0;
 }
@@ -103,16 +110,19 @@ int ax_build_index(char *path, char *db_name)
 void ax_append_dir_content(ax_list *files, ax_list_entry *dir) 
 {
 	ax_file_entry *e = (ax_file_entry *)dir->data;
-	ax_file_entry new_entry;
+	ax_file_entry new_entry, *old_entry_ptr;
 	DIR *directory;
 	struct dirent *entry;
 	struct stat statbuf;
-	char *filename, *ptr;
+	char *filename;
+        char *ptr;
 	int len;
 	size_t path_len = strlen(e->cname);
 
 	if(!S_ISDIR(e->st.st_mode)) return;
 
+	filename = ax_path_alloc(&len);
+	
 	directory = opendir(e->cname);
 	if(directory == NULL) {
 		fprintf(stderr, "Cannot open dir %s: ", e->cname);
@@ -124,7 +134,6 @@ void ax_append_dir_content(ax_list *files, ax_list_entry *dir)
 	while((entry = readdir(directory)) != NULL) {
 		if(entry->d_name[0] == '.') continue;
 
-		filename = ax_path_alloc(&len);
 		sprintf(filename, "%s%s", e->cname, entry->d_name);
 		printf("\tfound file '%s'\n", filename);
 
@@ -134,16 +143,58 @@ void ax_append_dir_content(ax_list *files, ax_list_entry *dir)
 			continue;
 		}
 
+		/* looks like such byte-level operations
+		 * shouldn't break anything with 
+		 * 8-bit and UTF-8 locales
+		 */
 		ptr = filename + strlen(filename);
 	       	*ptr++	= '/'; 
 		*ptr = '\0';
 		
 		new_entry.st = statbuf;
-		new_entry.cname = filename;	
-		ax_list_append(files, &new_entry, sizeof(new_entry));
+		new_entry.cname = filename;		
+
+		ax_list_append(files, &new_entry);
 	}
+	free(filename);
+
+	ax_list_remove(files, dir);
+
 	if(closedir(directory)) {
 		fprintf(stderr, "Cannot close %s: ", e->cname);
 		perror("");
 	}
 }
+
+
+int ax_file_entry_free(void *entry)
+{
+	if(entry == NULL) return 1;
+	ax_file_entry *e = (ax_file_entry *)entry;
+
+	free(e->cname);
+	free(e);
+	return 0;
+}
+
+void *ax_file_entry_allocator(void *entry)
+{
+	if(entry == NULL) return NULL;
+	ax_file_entry *e = (ax_file_entry *)entry;
+	ax_file_entry *r = (ax_file_entry *)malloc(sizeof(ax_file_entry));
+
+	if(r == NULL) return NULL;
+
+	r->cname = (char *)malloc(strlen(e->cname)+1);
+
+	if(r->cname == NULL) {
+		free(r);
+		return NULL;
+	}
+
+	strncpy(r->cname, e->cname, strlen(e->cname)+1);
+	r->st = e->st;
+	
+	return r;
+}
+

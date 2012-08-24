@@ -36,6 +36,24 @@ typedef struct {
 int ax_build_index(char *, char *);
 
 /**
+ * this function allocates memory for file entry and copies data from buffer 
+ * to newly allocated structure
+ * 
+ * @param entry pointer to buffer with entry to copy
+ * @return pointer to allocated entry
+ */
+void *ax_file_entry_allocator(void *entry);
+
+
+/** 
+ * this function frees memory allocated by ax_file_entry_allocator()
+ * 
+ * @param entry entry to free
+ * @return	integer value, 0 - success
+*/
+int ax_file_entry_free(void *entry);
+ 
+/**
  * this function scans directory stored in list entry and
  * appends its contents into files list
  * 

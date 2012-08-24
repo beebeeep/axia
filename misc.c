@@ -72,7 +72,7 @@ char *ax_path_alloc(int *sizep)
 	return path;
 }
 
-ax_list *ax_list_init(void *entry, size_t size)
+ax_list *ax_list_init(void *entry, void *(*alloc_func)(void *), int (*free_func)(void *) )
 {
 	ax_list *list =  (ax_list *)malloc(sizeof(ax_list));
 	if(list == NULL) return NULL; 
@@ -83,38 +83,61 @@ ax_list *ax_list_init(void *entry, size_t size)
 		free(list);
 		return NULL;
 	}
-	e->data = malloc(size);
+
+	e->data = alloc_func(entry);		//call allocator that allocates memory and copies data 
 	if(e->data == NULL) {
 		free(list); free(e);
 		return NULL;
 	}
-	memcpy(e->data, entry, size);
 
 	e->next = NULL;
+	e->prev = NULL;
 	list->head = e;
 	list->tail = e;
+	list->alloc_func = alloc_func;
+	list->free_func = free_func; 
+	list->size = 1;
 
 	return list;
 }
 
-ax_list_entry * ax_list_append(ax_list *list, void *entry, size_t size)
+ax_list_entry * ax_list_append(ax_list *list, void *entry)
 {
 	/* allocate memory for list entry and list data */
 	ax_list_entry *e = (ax_list_entry *)malloc(sizeof(ax_list_entry));
 	if(e == NULL) return NULL; 
-	e->data = malloc(size);
+	e->data = list->alloc_func(entry);
 	if(e->data == NULL) {
 		free(e); 
 		return NULL;
 	}
 	
-	/* copy data to list entry */
-	memcpy(e->data, entry, size);
 	e->next = NULL; 
+	e->prev = list->tail;
 
 	/* set pointer to created entry and shift list tail */
 	list->tail->next = e; 
 	list->tail = e; 
+	list->size++;
 
 	return e;
+}
+
+int ax_list_remove(ax_list *list, ax_list_entry *entry)
+{
+	if(list == NULL || entry == NULL) return 1;
+
+	if(entry->prev == NULL) {
+		// head of list
+		list->head = entry->next;
+	} else if(entry->next == NULL) {
+		// tail of list
+		list->tail = entry->prev;
+	} else {
+		//middle of list
+		entry->prev = entry->next;
+	}
+	
+	list->size--;
+	return list->free_func((void *)entry);
 }
