@@ -102,6 +102,7 @@ int ax_build_index(char *path, char *db_name)
 	struct rusage usage;
 	getrusage(RUSAGE_SELF, &usage);
 	fprintf(stderr, "Resource usage:\n\treads=%ld\n\twrites=%ld\n\tmaxrss=%ld\n", usage.ru_inblock, usage.ru_oublock, usage.ru_maxrss);
+	ax_list_free(files);
 
 
 	return 0;

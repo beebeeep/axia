@@ -125,19 +125,53 @@ ax_list_entry * ax_list_append(ax_list *list, void *entry)
 
 int ax_list_remove(ax_list *list, ax_list_entry *entry)
 {
+	int ret; 
+
 	if(list == NULL || entry == NULL) return 1;
 
 	if(entry->prev == NULL) {
 		// head of list
 		list->head = entry->next;
+		list->head->prev = NULL;
 	} else if(entry->next == NULL) {
 		// tail of list
 		list->tail = entry->prev;
+		list->tail->next = NULL;
 	} else {
 		//middle of list
-		entry->prev = entry->next;
+		entry->next->prev = entry->prev;
+		entry->prev->next = entry->next;
 	}
 	
 	list->size--;
-	return list->free_func((void *)entry);
+	ret = list->free_func(entry->data);
+	free(entry);
+	return ret;
+}
+
+int ax_list_free(ax_list *list)
+{
+	if(list == NULL) return 1;
+
+	ax_list_entry *e = list->head, *t;
+	int ret; 
+	
+	while(e != NULL) {
+		t = e->next;
+		if( (ret = list->free_func(e->data)) != 0) return 2;
+		free(e);
+		e = t;
+	}
+	return 0;
+}
+
+void ax_list_dump(ax_list *list) 
+{
+	ax_list_entry *e = list->head;
+	size_t c = 0;
+
+	while(e != NULL) {
+		printf("\nElem #%d 0x%x, prev = 0x%x, next = 0x%x\n", c++, e, e->prev, e->next);
+		e = e->next;
+	}
 }

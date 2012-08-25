@@ -69,5 +69,15 @@ ax_list_entry *ax_list_append(ax_list *list, void *entry);
 */
 int ax_list_remove(ax_list *list, ax_list_entry *entry); 
 
+/**
+ * frees list and all its elements
+ *
+ * @param list list to free
+ * @return integer, 0 - success
+*/
+int ax_list_free(ax_list *list);
+
+void ax_list_dump(ax_list *list);
+
 #endif
 
